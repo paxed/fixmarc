@@ -115,40 +115,6 @@ sub msg {
     print STDOUT "$msg [id:".$self->{'id'}."]\n";
 }
 
-
-#
-# TODO:
-#
-# my $newfield = MARC::Field->new('007', $data);
-# $record->insert_fields_ordered($newfield);
-#
-# @flist = $record->field('007');
-# my $text = $flist[0]->data();
-# $flist[0]->update($text);
-#
-# $flist[0]->tag()
-#
-# my @sflist = $flist[0]->subfields();
-#
-# $flist[0]->indicator(1);
-# $flist[0]->indicator(2);
-#
-# $flist[0]->set_indicator(1, '3');
-#
-# my $fld = MARC::Field->new('041', $f->indicator(1), $f->indicator(2), '9' => '');
-#
-# $fld->add_subfields();
-#
-# $record->delete_fields(@flist);
-#
-# $fld->delete_subfield(code => '9');
-#
-# $fld->subfield('c');
-#
-# 
-#
-#
-
 sub maybe_fix_marc {
     my ($self, $id, $marcxml) = @_;
 
