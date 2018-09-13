@@ -28,7 +28,7 @@ sub fix_700_ind1 {
             }
         }
     }
-    printmsg("Changed", $id) if ($changed);
+    $fixer->msg("Changed 700.ind1") if ($changed);
 }
 
 my $fixer = FixMarc->new({
