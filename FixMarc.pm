@@ -48,6 +48,27 @@ sub _db_disconnect {
     $dbh->disconnect();
 }
 
+sub _read_db_settings {
+    my ($fname, $dbdata) = @_;
+    my %data = %{$dbdata};
+
+    if (-f "$fname" && -r "$fname") {
+        my $fh;
+        open ($fh, '<', $fname) or die("Could not read settings from $fname");
+        while (my $line = <$fh>) {
+            chomp($line);
+            next if ($line =~ /^ *#/);
+            if ($line =~ m/^(.+) *= *(.+)$/) {
+                my ($key, $val) = ($1, $2);
+                $data{$key} = $val if (defined($data{$key}));
+            }
+        }
+        close($fh);
+    }
+
+    return \%data;
+}
+
 sub new {
     my ($class, $args) = @_;
 
@@ -59,6 +80,8 @@ sub new {
         'mysql_socket' => undef,
         'driver' => 'mysql'
         );
+
+    %dbdata = %{_read_db_settings(".fixmarc.conf", \%dbdata)};
 
     my $help = 0;
     my $man = 0;
