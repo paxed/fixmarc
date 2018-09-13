@@ -30,7 +30,6 @@ sub fix_007_MO {
 
 my $fixer = FixMarc->new({
     'where' => 'ExtractValue(metadata, \'//datafield[@tag="942"]/subfield[@code="c"]\') = "MO"',
-#    'func' => \&fix_007_MO
+    'func' => \&fix_007_MO
                          });
-$fixer->addfunc(\&fix_007_MO);
 $fixer->run();
