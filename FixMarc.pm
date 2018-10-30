@@ -106,7 +106,7 @@ sub new {
     GetOptions(
         'db=s%' => sub { my $onam = $_[1]; my $oval = $_[2]; if (defined($self->{'dbdata'}{$onam})) { $self->{'dbdata'}{$onam} = $oval; } else { die("Unknown db setting."); } },
         'sql=s' => \$self->{'sql'},
-        'where=s' => sub { $self->{'sql'} = _constructSelectSQL(undef, $_[2]); },
+        'where=s' => sub { $self->{'sql'} = _constructSelectSQL(undef, $_[1]); },
         'v|verbose' => \$self->{'verbose'},
         'dry-run|dryrun' => \$self->{'dryrun'},
         'help|h|?' => \$help,
