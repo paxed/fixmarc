@@ -8,6 +8,8 @@ use MARC::Field;
 my %bibnum_to_773w;
 my %f001f003_to_bibnum;
 
+sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
+
 sub gather_data {
     my ($fixer, $record) = @_;
 
@@ -29,6 +31,11 @@ sub gather_data {
     } else {
         $fixer->error("Multiple 001");
         return;
+    }
+
+    if ($f003 ne trim($f003)) {
+        $fixer->error("003 needs trimming (".$f003.")");
+        $f003 = trim($f003);
     }
 
     my $f001data = $f001[0]->data();
