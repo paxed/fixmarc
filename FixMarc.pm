@@ -60,7 +60,7 @@ sub _read_db_settings {
             next if ($line =~ /^ *#/);
             if ($line =~ m/^(.+) *= *(.+)$/) {
                 my ($key, $val) = ($1, $2);
-                $data{$key} = $val if (defined($data{$key}));
+                $data{$key} = $val if (exists($data{$key}));
             }
         }
         close($fh);
