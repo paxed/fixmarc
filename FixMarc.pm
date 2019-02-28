@@ -3,7 +3,7 @@ package FixMarc;
 use strict;
 use warnings;
 
-use Getopt::Long;
+use Getopt::Long qw(GetOptionsFromArray);
 use Pod::Usage;
 use MARC::Record;
 use MARC::File::XML (BinaryEncoding => 'UTF-8');
@@ -103,7 +103,9 @@ sub new {
 
     $self->{'dbdata'} = \%dbdata;
 
-    GetOptions(
+    my @tmpARGV = @ARGV;
+
+    GetOptionsFromArray(\@tmpARGV,
         'db=s%' => sub { my $onam = $_[1]; my $oval = $_[2]; if (defined($self->{'dbdata'}{$onam})) { $self->{'dbdata'}{$onam} = $oval; } else { die("Unknown db setting."); } },
         'sql=s' => \$self->{'sql'},
         'where=s' => sub { $self->{'sql'} = _constructSelectSQL(undef, $_[1]); },
