@@ -44,8 +44,8 @@ sub fix_languages {
             my $l = substr($f008data, 35, 3);
             if (defined($l) && $l eq '|||') {
                 my $nl = $record->subfield('041', 'a') || $record->subfield('041', 'd') || '';
-                if (defined($lang{$nl})) {
-                    my $tmp = str_replace_nth($f008data, 35, $nl);
+                if (defined($lang{lc($nl)})) {
+                    my $tmp = str_replace_nth($f008data, 35, lc($nl));
                     $f008->update($tmp);
                     $fixer->msg("Updated 008:'".$f008data."'=>'".$tmp."'");
                 } elsif ($nl ne '') {
