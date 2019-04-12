@@ -36,13 +36,16 @@ sub str_replace_nth {
 sub chk_languages {
     my ($fixer, $record) = @_;
 
+    my $f003x = $record->field('003');
+    my $f003 = defined($f003x) ? $f003x->data() : '';
+
     my $f008 = $record->field('008');
     if (defined($f008)) {
         my $f008data = $f008->data();
 
         if (length($f008data) == 40) {
             my $l = substr($f008data, 35, 3) || '';
-            $fixer->error("Unknown lang '".$l."' in 008") if (!defined($lang{$l}) && $l ne '   ');
+            $fixer->error("$f003: Unknown lang '".$l."' in 008") if (!defined($lang{$l}) && $l ne '   ');
         }
     }
 
@@ -52,7 +55,7 @@ sub chk_languages {
         foreach my $sf (@sfa) {
             next if ($sf->[0] !~ /[a-z]/);
             my $l = $sf->[1] || '';
-            $fixer->error("Unknown lang '".$l."' in 041".$sf->[0]) if (($l eq '|||') || !defined($lang{$l}));
+            $fixer->error("$f003: Unknown lang '".$l."' in 041".$sf->[0]) if (($l eq '|||') || !defined($lang{$l}));
         }
     }
 }
