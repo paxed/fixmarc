@@ -131,13 +131,13 @@ sub addfunc {
 sub error {
     my ($self, $msg) = @_;
 
-    print STDOUT "ERROR:$msg [id:".$self->{'id'}."]\n";
+    print STDOUT "ERROR:$msg".(defined($self->{'id'}) ? " [id:".$self->{'id'}."]" : "")."\n";
 }
 
 sub msg {
     my ($self, $msg) = @_;
 
-    print STDOUT "$msg [id:".$self->{'id'}."]\n";
+    print STDOUT "$msg".(defined($self->{'id'}) ? " [id:".$self->{'id'}."]" : "")."\n";
 }
 
 sub maybe_fix_marc {
@@ -174,6 +174,9 @@ sub run {
 
     die("No SQL query") if (!defined($self->{'sql'}));
     die("No fixing function") if (!defined($self->{'func'}) || scalar(@{$self->{'func'}}) < 1);
+
+    $self->msg("INFO:Dry run") if ($self->{'dryrun'});
+    $self->msg("INFO:SQL:".$self->{'sql'});
 
     my $dbh = $self->{'dbh'} = $self->_db_connect();
     my $sth = $dbh->prepare($self->{'sql'});
