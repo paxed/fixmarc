@@ -1,5 +1,8 @@
 package FixMarc;
 
+use utf8;
+binmode STDOUT, ':utf8';
+
 use strict;
 use warnings;
 
@@ -10,10 +13,35 @@ use MARC::File::XML (BinaryEncoding => 'UTF-8');
 use MARC::Charset;
 use DBI;
 
+use Text::Diff;
+
+use C4::Biblio;
+
 # autoflush stdout/stderr
 $| = 1;
 
 MARC::Charset->assume_unicode(1);
+
+# handle warnings coming from MARC::Charset &c
+# we don't want to lose data to conversion error
+my $warning_self;
+my $warning_id;
+my $warning_stop = 0;
+
+my $old_warn_handler = $SIG{__WARN__};
+$SIG{__WARN__} = sub {
+
+    if (defined($warning_self)) {
+	my $s = join(",", @_);
+	$s =~ s/\n//g;
+	$warning_self->error("WARN:" . $s);
+	$warning_stop = 1;
+    }
+    undef $warning_self;
+    undef $warning_id;
+
+    $old_warn_handler->(@_) if $old_warn_handler;
+};
 
 sub _constructSelectSQL {
     my ($sql, $where) = @_;
@@ -96,6 +124,7 @@ sub new {
         sql => $sql,
         updatesql => $args->{'updatesql'},
         verbose => $args->{'verbose'} || 0,
+	debug => $args->{'debug'} || 0,
         dryrun => $args->{'dryrun'} || 0
     }, $class;
 
@@ -110,7 +139,8 @@ sub new {
         'sql=s' => \$self->{'sql'},
         'where=s' => sub { $self->{'sql'} = _constructSelectSQL(undef, $_[1]); },
         'v|verbose' => \$self->{'verbose'},
-        'dry-run|dryrun' => \$self->{'dryrun'},
+	'dry-run|dryrun' => \$self->{'dryrun'},
+	'debug' => \$self->{'debug'},
         'help|h|?' => \$help,
         'man' => \$man,
         ) or pod2usage(2);
@@ -144,12 +174,18 @@ sub maybe_fix_marc {
     my ($self, $id, $marcxml) = @_;
 
     my $record;
+    $warning_self = $self;
+    $warning_id = $id;
+    $warning_stop = 0;
 
     eval {
 	$record = MARC::Record->new_from_xml($marcxml);
     };
     if ($@) {
         $self->error("MARCXML record error");
+	undef $warning_self;
+	undef $warning_id;
+	$warning_stop = 0;
         return;
     }
 
@@ -159,14 +195,25 @@ sub maybe_fix_marc {
         &{$tmpfunc}($self, $record);
     }
 
-    if (!$self->{'dryrun'}) {
+    if (!$self->{'dryrun'} || $self->{'debug'}) {
         my $recxml = $record->as_xml_record();
         if ($origrecord->as_xml_record() ne $recxml) {
-            my $sql = $self->{'updatesql'};
-            my $sth = $self->{'dbh'}->prepare($sql);
-            $sth->execute($recxml, $id);
+	    if ($self->{'debug'} && !$warning_stop) {
+		$self->msg(diff(\$origrecord->as_xml_record(), \$recxml, { CONTEXT => 0 }));
+	    }
+	    if (!$self->{'dryrun'} && !$warning_stop) {
+		my $sql = $self->{'updatesql'};
+		my $sth = $self->{'dbh'}->prepare($sql);
+		$sth->execute($recxml, $id);
+
+		my $biblionumber = $id; # Hopefully ...
+		C4::Biblio::ModZebra( $biblionumber, "specialUpdate", "biblioserver" );
+	    }
         }
     }
+    undef $warning_self;
+    undef $warning_id;
+    $warning_stop = 0;
 }
 
 sub run {
