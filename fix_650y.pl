@@ -54,13 +54,15 @@ sub fix_650y {
 		next if ($sf->[0] ne 'y');
                 my $w = $sf->[1] || '';
 		next if ($w eq '');
+                next if ($w =~ /[0-9]/);
 
 		my $newvalue = '';
 		my $lcw = lc($w);
 
 		next if (grep { $_ eq $lcw } @skipwords);
-		next if ($lcw =~ /.+aika$/);
-		next if ($lcw =~ /.+kausi$/);
+		next if ($lcw =~ /aika$/);
+		next if ($lcw =~ /kausi$/);
+                next if ($lcw =~ /tiden$/);
 
 		$newvalue = fix_ucfirst($w);
 		$fixer->msg("CHANGE:\"$w\"=>\"".$newvalue."\"");
@@ -78,13 +80,12 @@ sub fix_650y {
 		}
 		$f->replace_with($newfield);
 	    }
-	    
         }
     }
 }
 
 my $fixer = FixMarc->new({
-    'where' => 'ExtractValue(metadata, \'count(//datafield[@tag="650"]/subfield[@code="y"])\') > 0 and ExtractValue(metadata, \'//datafield[@tag="650"]/subfield[@code="y"]\') not regexp \'[0-9]\'',
+    'where' => 'ExtractValue(metadata, \'count(//datafield[@tag="650"]/subfield[@code="y"])\') > 0',
     'func' => \&fix_650y
                          });
 $fixer->run();
