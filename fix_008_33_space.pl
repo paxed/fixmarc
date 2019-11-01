@@ -30,7 +30,7 @@ sub fix_008 {
 }
 
 my $fixer = FixMarc->new({
-    'where' => 'substr(ExtractValue(metadata, \'//controlfield[@tag="008"]\'), 33, 1) = " "',
+    'where' => 'substr(ExtractValue(metadata, \'//controlfield[@tag="008"]\'), 34, 1) = " "',
     'func' => \&fix_008
                          });
 $fixer->run();
