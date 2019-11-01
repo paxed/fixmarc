@@ -9,7 +9,7 @@ use warnings;
 use Getopt::Long qw(GetOptionsFromArray);
 use Pod::Usage;
 use MARC::Record;
-use MARC::File::XML (BinaryEncoding => 'UTF-8');
+use MARC::File::XML;
 use MARC::Charset;
 use DBI;
 
@@ -179,7 +179,7 @@ sub maybe_fix_marc {
     $warning_stop = 0;
 
     eval {
-	$record = MARC::Record->new_from_xml($marcxml);
+	$record = MARC::Record->new_from_xml($marcxml, 'utf-8');
     };
     if ($@) {
         $self->error("MARCXML record error");
