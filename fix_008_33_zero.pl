@@ -24,6 +24,7 @@ sub fix_008 {
         my $fdata = $f->data();
         my $ofdata = $fdata;
 
+        next if (length($fdata) != 40);
         my $p33 = substr($fdata, 33, 1);
 
         if ($p33 eq '0') {
