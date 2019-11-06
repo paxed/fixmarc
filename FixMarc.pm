@@ -44,12 +44,13 @@ $SIG{__WARN__} = sub {
 };
 
 sub _constructSelectSQL {
-    my ($sql, $where) = @_;
+    my ($sql, $where, $limit) = @_;
 
     if (!defined($sql)) {
         $sql = "select biblionumber, metadata from biblio_metadata";
         $sql .= " where ".$where if (defined($where));
         $sql .= " order by biblionumber";
+        $sql .= " limit ".$limit if (defined($limit) && $limit > 0);
     }
     return $sql;
 }
@@ -114,7 +115,7 @@ sub new {
     my $help = 0;
     my $man = 0;
 
-    my $sql = _constructSelectSQL($args->{'sql'}, $args->{'where'});
+    my $sql = _constructSelectSQL($args->{'sql'}, $args->{'where'}, $args->{'limit'});
 
     if (!defined($args->{'updatesql'})) {
         $args->{'updatesql'} = 'update biblio_metadata set timestamp=NOW(), metadata=? where biblionumber=?';
@@ -123,6 +124,8 @@ sub new {
     my $self = bless {
         sql => $sql,
         updatesql => $args->{'updatesql'},
+        where => $args->{'where'} || undef,
+        limit => $args->{'limit'} || undef,
         verbose => $args->{'verbose'} || 0,
 	debug => $args->{'debug'} || 0,
         dryrun => $args->{'dryrun'} || 0
@@ -137,7 +140,8 @@ sub new {
     GetOptionsFromArray(\@tmpARGV,
         'db=s%' => sub { my $onam = $_[1]; my $oval = $_[2]; if (defined($self->{'dbdata'}{$onam})) { $self->{'dbdata'}{$onam} = $oval; } else { die("Unknown db setting."); } },
         'sql=s' => \$self->{'sql'},
-        'where=s' => sub { $self->{'sql'} = _constructSelectSQL(undef, $_[1]); },
+        'where=s' => \$self->{'where'},
+        'limit=s' => \$self->{'limit'},
         'v|verbose' => \$self->{'verbose'},
 	'dry-run|dryrun' => \$self->{'dryrun'},
 	'debug' => \$self->{'debug'},
@@ -145,8 +149,11 @@ sub new {
         'man' => \$man,
         ) or pod2usage(2);
 
+    pod2usage(1) if ($self->{'limit'} =~ /[^0-9]/);
     pod2usage(1) if ($help);
     pod2usage(-exitval => 0, -verbose => 2) if $man;
+
+    $self->{'sql'} = _constructSelectSQL(undef, $self->{'where'}, $self->{'limit'}) if ($args->{'where'} || $args->{'limit'});
 
     return $self;
 }
