@@ -43,6 +43,11 @@ sub gather_data {
     my $bibnum = $fixer->{'id'}; # biblionumber
 
     if (scalar(@f773) > 0) {
+        my $ldr7 = substr($record->leader(), 7, 1);
+        if (!($ldr7 =~ /^[abcd]$/)) {
+            $fixer->error("ldr/7 is $ldr7");
+        }
+
         foreach my $f (@f773) {
             my @sfa = $f->subfields();
             my $w = '';
