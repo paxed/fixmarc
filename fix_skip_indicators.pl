@@ -23,7 +23,7 @@ sub get_skipval {
     } elsif ($lang eq 'swe' && $s =~ /^(En )/i) {
         $ival = length($1);
     }
-    $ival += $addi;
+    $ival += $addi if ($ival);
     $ival = 0 if ($ival > 9);
     return $ival;
 }
@@ -46,7 +46,7 @@ my %skip_ind_fields = (
 sub fix_skip_ind {
     my ($fixer, $record) = @_;
 
-    my @fields = keys %skip_ind_fields;
+    my @fields = sort keys %skip_ind_fields;
 
     my $lang = '';
     my $f008 = $record->field('008');
