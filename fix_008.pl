@@ -19,7 +19,7 @@ sub fix_008 {
         my $fdata = $f->data();
         my $ofdata = $fdata;
 
-        if ($fdata =~ /^(......)(.)(....)(....)(...)                 ([a-z][a-z][a-z])$/) {
+        if ($fdata =~ /^([0-9]{6})(.)(....)(....)(...)                 ([a-z][a-z][a-z])$/) {
             my $createdate = $1;
             my $pubtype = $2;
             my $year1 = $3;
