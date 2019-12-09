@@ -61,9 +61,10 @@ sub fix_008 {
 		$s =~ s/\|/ /g;
 		$s =~ s/[^ abcdefghijklmop]/ /g;
 		$s = trim($s);
+		$s = "||||" if ($s eq '');
 		$s = sprintf("%-4s", $s);
 		$fdata = str_replace_nth($fdata, 18, $s);
-		$fixer->msg("Update 008/18-21: '".$illos."'=>'".$s."'");
+		$fixer->msg("Update 008/18-21: '".$illos."'=>'".$s."'") if ($s ne $illos);
 	    }
 
 	    if ($contents !~ /^([abcdefgijklmnopqrstuvwyz256]* *|\|\|\|\|)$/) {
@@ -71,9 +72,10 @@ sub fix_008 {
 		$s =~ s/\|/ /g;
 		$s =~ s/[^ abcdefgijklmnopqrstuvwyz256]/ /g;
 		$s = trim($s);
+		$s = "||||" if ($s eq '');
 		$s = sprintf("%-4s", $s);
 		$fdata = str_replace_nth($fdata, 24, $s);
-		$fixer->msg("Update 008/24-27: '".$contents."'=>'".$s."'");
+		$fixer->msg("Update 008/24-27: '".$contents."'=>'".$s."'") if ($s ne $contents);
 	    }
 
             if ($confpub !~ /[01\|]/) {
