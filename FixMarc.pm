@@ -153,7 +153,7 @@ sub new {
     pod2usage(1) if ($help);
     pod2usage(-exitval => 0, -verbose => 2) if $man;
 
-    $self->{'sql'} = _constructSelectSQL(undef, $self->{'where'}, $self->{'limit'}) if ($args->{'where'} || $args->{'limit'});
+    $self->{'sql'} = _constructSelectSQL(undef, $self->{'where'}, $self->{'limit'}) if ($self->{'where'} || $self->{'limit'});
 
     return $self;
 }
