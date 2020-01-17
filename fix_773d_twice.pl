@@ -35,6 +35,6 @@ sub fix_773d_multiple {
 
 my $fixer = FixMarc->new({
     'where' => 'ExtractValue(metadata, \'count(//datafield[@tag="773"]/subfield[@code="d"])\') > 1',
-    'func' => \&fix_773_multiple
+    'func' => \&fix_773d_multiple
                          });
 $fixer->run();
