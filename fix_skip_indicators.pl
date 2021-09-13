@@ -5,6 +5,13 @@ do './FixMarc.pm';
 use MARC::Record;
 use MARC::Field;
 
+my %langskips = (
+    '' => ['The ', 'An ', 'A ', 'L\'', 'La ', 'Les ', 'El ', 'Il ', 'Un ', 'De ', 'Det ', 'Den ', 'Ett ', 'Das ', 'Der '],
+    'ger' => ['Die '],
+    'swe' => ['En '],
+    'ita' => ['Una '],
+);
+
 sub get_skipval {
     my ($s, $lang) = @_;
 
@@ -16,13 +23,20 @@ sub get_skipval {
         $s =~ s/^[^\w]+//;
     }
 
-    if ($s =~ /^(The |An |A |L'|La |Le |Les |El |Il |Un |De |Det |Den |Ett |Das |Der )/i) {
-        $ival = length($1);
-    } elsif ($lang eq 'ger' && $s =~ /^(Die )/i) {
-        $ival = length($1);
-    } elsif ($lang eq 'swe' && $s =~ /^(En )/i) {
-        $ival = length($1);
+    for my $t (@{$langskips{''}}) {
+        if ($s =~ /^($t)/i) {
+            $ival = length($1);
+        }
     }
+
+    if ($lang ne '' && $ival == 0) {
+        for my $t (@{$langskips{$lang}}) {
+            if ($s =~ /^($t)/i) {
+                $ival = length($1);
+            }
+        }
+    }
+
     $ival += $addi if ($ival);
     $ival = 0 if ($ival > 9);
     return $ival;
