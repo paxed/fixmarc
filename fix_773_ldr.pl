@@ -5,6 +5,10 @@ do './FixMarc.pm';
 use MARC::Record;
 use MARC::Field;
 
+sub str_replace_nth {
+    my ($str, $nth, $chr) = @_;
+    return substr($str, 0, $nth).$chr.substr($str,($nth + length($chr))-length($str));
+}
 
 sub fix_773_ldr {
     my ($fixer, $record) = @_;
