@@ -126,6 +126,7 @@ sub new {
         updatesql => $args->{'updatesql'},
         where => $args->{'where'} || undef,
         limit => $args->{'limit'} || undef,
+        zebra => $args->{'zebra'} || 0,
         verbose => $args->{'verbose'} || 0,
 	debug => $args->{'debug'} || 0,
         dryrun => $args->{'dryrun'} || 0
@@ -142,6 +143,7 @@ sub new {
         'sql=s' => \$self->{'sql'},
         'where=s' => \$self->{'where'},
         'limit=s' => \$self->{'limit'},
+        'zebra' => \$self->{'zebra'},
         'v|verbose' => \$self->{'verbose'},
 	'dry-run|dryrun' => \$self->{'dryrun'},
 	'debug' => \$self->{'debug'},
@@ -213,8 +215,10 @@ sub maybe_fix_marc {
 		my $sth = $self->{'dbh'}->prepare($sql);
 		$sth->execute($recxml, $id);
 
-		my $biblionumber = $id; # Hopefully ...
-		C4::Biblio::ModZebra( $biblionumber, "specialUpdate", "biblioserver" );
+                if ($self->{'zebra'}) {
+                    my $biblionumber = $id; # Hopefully ...
+                    C4::Biblio::ModZebra( $biblionumber, "specialUpdate", "biblioserver" );
+                }
 	    }
         }
     }
