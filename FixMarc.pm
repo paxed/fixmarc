@@ -12,6 +12,7 @@ use MARC::Record;
 use MARC::File::XML;
 use MARC::Charset;
 use DBI;
+use XML::LibXML;
 
 use Text::Diff;
 
@@ -77,23 +78,46 @@ sub _db_disconnect {
     $dbh->disconnect();
 }
 
+sub _read_db_settings_xml {
+    my ($fname, $dbdata) = @_;
+    my %data = %{$dbdata};
+
+    my %matchxml = (
+        '//config/db_scheme' => 'driver',
+        '//config/database' => 'dbname',
+        '//config/hostname' => 'hostname',
+        '//config/user' => 'username',
+        '//config/pass' => 'password',
+        # TODO: port, socket
+        );
+
+    my $dom = XML::LibXML->load_xml(location => $fname);
+
+    foreach my $k (keys(%matchxml)) {
+        my $v = $matchxml{$k};
+        $data{$v} = $dom->findvalue($k) || $data{$v};
+    }
+
+    return \%data;
+}
+
 sub _read_db_settings {
     my ($fname, $dbdata) = @_;
     my %data = %{$dbdata};
 
-    if (-f "$fname" && -r "$fname") {
-        my $fh;
-        open ($fh, '<', $fname) or die("Could not read settings from $fname");
-        while (my $line = <$fh>) {
-            chomp($line);
-            next if ($line =~ /^ *#/);
-            if ($line =~ m/^(.+) *= *(.+)$/) {
-                my ($key, $val) = ($1, $2);
-                $data{$key} = $val if (exists($data{$key}));
-            }
+    return _read_db_settings_xml($fname, $dbdata) if ($fname =~ /\.xml$/);
+
+    my $fh;
+    open ($fh, '<', $fname) or die("Could not read settings from $fname");
+    while (my $line = <$fh>) {
+        chomp($line);
+        next if ($line =~ /^ *#/);
+        if ($line =~ m/^(.+) *= *(.+)$/) {
+            my ($key, $val) = ($1, $2);
+            $data{$key} = $val if (exists($data{$key}));
         }
-        close($fh);
     }
+    close($fh);
 
     return \%data;
 }
@@ -110,10 +134,15 @@ sub new {
         'driver' => 'mysql'
         );
 
-    %dbdata = %{_read_db_settings(".fixmarc.conf", \%dbdata)};
+    # config files, in order of preference
+    my @configfiles = (
+        "/etc/koha/koha-conf.xml",
+        ".fixmarc.conf"
+        );
 
     my $help = 0;
     my $man = 0;
+    my $used_configfile = 0;
 
     my $sql = _constructSelectSQL($args->{'sql'}, $args->{'where'}, $args->{'limit'});
 
@@ -134,8 +163,6 @@ sub new {
 
     $self->addfunc($args->{'func'}) if (defined($args->{'func'}));
 
-    $self->{'dbdata'} = \%dbdata;
-
     my @tmpARGV = @ARGV;
 
     GetOptionsFromArray(\@tmpARGV,
@@ -149,13 +176,27 @@ sub new {
 	'debug' => \$self->{'debug'},
         'help|h|?' => \$help,
         'man' => \$man,
+        'configfile=s' => sub { my $fn = $_[1]; if (-f $fn && -r $fn) { %dbdata = %{_read_db_settings($fn, \%dbdata)}; $self->{'dbdata'} = \%dbdata; }; $used_configfile = 1; },
         ) or pod2usage(2);
 
     pod2usage(1) if ($self->{'limit'} =~ /[^0-9]/);
     pod2usage(1) if ($help);
     pod2usage(-exitval => 0, -verbose => 2) if $man;
 
+    if (!$used_configfile) {
+        foreach my $fname (@configfiles) {
+            if (-f $fname && -r $fname) {
+                %dbdata = %{_read_db_settings($fname, \%dbdata)};
+                last;
+            }
+        }
+        $self->{'dbdata'} = \%dbdata;
+    }
+
+
     $self->{'sql'} = _constructSelectSQL(undef, $self->{'where'}, $self->{'limit'}) if ($self->{'where'} || $self->{'limit'});
+
+    $self->msg("INFO: PARAMS: " . join(" ", @ARGV));
 
     return $self;
 }
