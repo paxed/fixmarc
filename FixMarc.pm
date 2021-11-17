@@ -196,6 +196,7 @@ sub new {
 
     $self->{'sql'} = _constructSelectSQL(undef, $self->{'where'}, $self->{'limit'}) if ($self->{'where'} || $self->{'limit'});
 
+    $self->msg("INFO: Using db: " . $self->{'dbdata'}{'dbname'});
     $self->msg("INFO: PARAMS: " . join(" ", @ARGV));
 
     return $self;
