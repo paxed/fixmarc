@@ -5,7 +5,7 @@ do './FixMarc.pm';
 use MARC::Record;
 use MARC::Field;
 
-# Muuttaa 999c:n samaksi kuin 999d
+# Muuttaa 999d:n samaksi kuin 999c
 
 sub fix_999c {
     my ($fixer, $record) = @_;
@@ -17,8 +17,8 @@ sub fix_999c {
         my $d = $f->subfield('d') || 0;
 
         if ($c && $d && ($c != $d)) {
-            $f->update('c' => $d);
-            $fixer->msg("Changed 999c from \"$c\" to \"$d\"");
+            $f->update('d' => $c);
+            $fixer->msg("Changed 999d from \"$d\" to \"$c\"");
         }
     }
 }
