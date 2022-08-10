@@ -48,7 +48,7 @@ sub _constructSelectSQL {
     my ($sql, $where, $limit) = @_;
 
     if (!defined($sql)) {
-        $sql = "select biblionumber, metadata from biblio_metadata";
+        $sql = "select biblionumber, metadata, timestamp from biblio_metadata";
         $sql .= " where ".$where if (defined($where));
         $sql .= " order by biblionumber";
         $sql .= " limit ".$limit if (defined($limit) && $limit > 0);
@@ -292,6 +292,7 @@ sub run {
             }
             my $marcxml = $ref->{'marc'} || $ref->{'marcxml'} || $ref->{'metadata'} || '';
             $self->{'id'} = $id;
+            $self->{'timestamp'} = $ref->{'timestamp'} || undef;
             $self->maybe_fix_marc($id, $marcxml) if ($marcxml ne '');
             $i++;
         }
