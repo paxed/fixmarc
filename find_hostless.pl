@@ -53,12 +53,32 @@ sub gather_data {
             my $w = '';
 
             foreach my $sf (@sfa) {
-                $w = $sf->[1] if ($sf->[0] eq 'w');
+                $w = trim($sf->[1]) if ($sf->[0] eq 'w');
             }
 
+            # wtf?
+            $w =~ s/\. -$//;
+            $w = trim($w);
+
             if ($w ne '') {
-                $bibnum_to_773w{$bibnum} = $w."\t".$f003;
-                #$fixer->msg("773:".$w."-".$f003);
+
+                # is $w of format "($003)$001"?
+                if ($w =~ /\((.*?)\)(.*)$/) {
+                    my $org = $1 || "";
+                    $w = trim($2 || "");
+
+                    if ($org ne $f003) {
+                        $fixer->error("773w org \"$org\" does not match \"$f003\"");
+                        return;
+                    }
+                }
+
+                if ($w ne '') {
+                    $bibnum_to_773w{$bibnum} = $w."\t".$f003;
+                    #$fixer->msg("773:".$w."-".$f003);
+                } else {
+                    $fixer->error("773w trims down to nothing");
+                }
             }
         }
     }
