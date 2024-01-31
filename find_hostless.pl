@@ -74,7 +74,7 @@ sub gather_data {
                 }
 
                 if ($w ne '') {
-                    $bibnum_to_773w{$bibnum} = $w."\t".$f003;
+                    $bibnum_to_773w{$bibnum} = uc($w."\t".$f003);
                     #$fixer->msg("773:".$w."-".$f003);
                 } else {
                     $fixer->error("773w trims down to nothing");
@@ -83,7 +83,7 @@ sub gather_data {
         }
     }
 
-    $f001f003_to_bibnum{$f001data."\t".$f003} = $bibnum;
+    $f001f003_to_bibnum{uc($f001data."\t".$f003)} = $bibnum;
     #$fixer->msg("001:".$f001data."-".$f003);
 }
 
