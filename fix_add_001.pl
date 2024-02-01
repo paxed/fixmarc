@@ -14,7 +14,7 @@ sub fix_001 {
 
     my $nf = MARC::Field->new('001', $bn);
     $record->insert_fields_ordered($nf);
-    $fixer->msg("Added ".$nf->tag().":'".$nd."'");
+    $fixer->msg("Added ".$nf->tag().":'".$bn."'");
 }
 
 my $fixer = FixMarc->new({
