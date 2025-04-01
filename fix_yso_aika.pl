@@ -55,6 +55,7 @@ sub fix_ysoaika_singlefield {
     if ($new_a =~ /^(.+)\.$/) {
         $new_a = $1;
     }
+    $new_a =~ s/\N{EN DASH}/-/g;
 
     if ($new_a =~ /^([0-9]{3}0)-([0-9]{3}9)$/) {
         my $year1 = int($1);
