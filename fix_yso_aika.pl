@@ -24,14 +24,18 @@ sub fetch_ysoaika {
     my ($fixer, $term) = @_;
 
     if (!defined($yso_aika{$term})) {
-        my $t = uri_escape($term);
+        my $t;
+        eval {
+            $t = uri_escape($term);
+        };
+        if ($@) {
+            $fixer->error("could not uri_escape \"$term\"");
+            return undef;
+        }
         my $response = HTTP::Tiny->new->get('https://api.finto.fi/rest/v1/search?vocab=yso-aika&query='.$t.'&fields=topConceptOf');
-        die "Failed!\n" unless $response->{success};
+        die "Failed to fetch data from finto API!\n" unless $response->{success};
         my $data = decode_json($response->{content});
-        #print Dumper($data);
-        #print Dumper($data->{'results'}[0]->{'prefLabel'});
-        #print Dumper($data->{'results'}[0]->{'uri'});
-        $yso_aika{$term} = $data->{'results'}[0]->{'uri'} || "ERROR";
+        $yso_aika{$term} = $data->{'results'}[0] || "ERROR";
     }
     return $yso_aika{$term};
 }
@@ -70,20 +74,25 @@ sub fix_ysoaika_singlefield {
     }
 
 
-    my $linkuri = fetch_ysoaika($fixer, $new_a);
+    my $ysodata = fetch_ysoaika($fixer, $new_a);
 
-    if (!defined($linkuri) || $linkuri eq "ERROR") {
+    if (!defined($ysodata) || $ysodata eq "ERROR") {
         $fixer->error("Field ".$f->tag()."\$a:\"".$new_a."\" finto fetch failed");
-    } elsif ($sf_0 ne $linkuri) {
-        $f->update('0' => $linkuri);
-        $fixer->msg("Field ".$f->tag()."\$0:\"".$sf_0."\"=>\"".$linkuri."\"");
+    } elsif (($sf_0 eq "") && ($sf_0 ne $ysodata->{'uri'})) {
+        $f->update('0' => $ysodata->{'uri'});
+        $fixer->msg("Field ".$f->tag()."\$0:\"".$sf_0."\"=>\"".$ysodata->{'uri'}."\"");
 
-        $f->update('2' => 'yso/fin') if ($sf_2 ne "yso/fin"); # FIXME: language
+        my $lang = "";
+
+        $lang = "yso/fin" if ($ysodata->{'lang'} eq 'fi');
+        $lang = "yso/swe" if ($ysodata->{'lang'} eq 'sv');
+
+        $f->update('2' => $lang) if (($lang ne "") && ($sf_2 ne $lang));
     }
 
     my $ind2 = $f->indicator(2) . "";
 
-    if (($f->tag() eq '648') && ($linkuri eq "ERROR") &&
+    if (($f->tag() eq '648') && ($ysodata eq "ERROR") &&
         ($new_a =~ /^[0-9]{4}(-[0-9]{4})?$/) && ($ind2 eq '7')) {
         $f->set_indicator(2, '4');
         $f->delete_subfield(code => '2');
