@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use utf8;
 
 do './FixMarc.pm';
 use MARC::Record;
@@ -16,15 +17,17 @@ use Data::Dumper;
 # also change some indicators
 
 
-# https://api.finto.fi/rest/v1/search?vocab=yso-aika&query=2010-luku&fields=topConceptOf
 
 my %yso_aika;
 
 sub fetch_ysoaika {
     my ($fixer, $term) = @_;
 
+    #$fixer->msg("fetch_ysoaika(".$term.")");
+    
     if (!defined($yso_aika{$term})) {
         my $t;
+
         eval {
             $t = uri_escape($term);
         };
@@ -32,10 +35,20 @@ sub fetch_ysoaika {
             $fixer->error("could not uri_escape \"$term\"");
             return undef;
         }
-        my $response = HTTP::Tiny->new->get('https://api.finto.fi/rest/v1/search?vocab=yso-aika&query='.$t.'&fields=topConceptOf');
+        $t =~ s/%E5/%C3%A5/g; # å
+        #$t =~ s/%2A/*/g;
+
+        my $urli = 'https://api.finto.fi/rest/v1/search?vocab=yso-aika&query='.$t.'&fields=topConceptOf';
+        my $response = HTTP::Tiny->new->get($urli);
         die "Failed to fetch data from finto API!\n" unless $response->{success};
+        #$fixer->msg("fetch urli:\"".$urli."\"");
         my $data = decode_json($response->{content});
-        $yso_aika{$term} = $data->{'results'}[0] || "ERROR";
+
+        if (!defined($data->{'results'}[0]) && ($term !~ /\*/)) {
+            return fetch_ysoaika($fixer, $term . "*");
+        } else {
+            $yso_aika{$term} = $data->{'results'}[0] || "ERROR";
+        }
     }
     return $yso_aika{$term};
 }
@@ -68,26 +81,30 @@ sub fix_ysoaika_singlefield {
         $new_a = $year1."-luku (vuosikymmen)" if ($year1 + 9 == $year2);
     }
 
-    if ($sf_a ne $new_a) {
-        $f->update('a' => $new_a);
-        $fixer->msg("Field ".$f->tag()."\$a:\"".$sf_a."\"=>\"".$new_a."\"");
-    }
-
-
     my $ysodata = fetch_ysoaika($fixer, $new_a);
 
     if (!defined($ysodata) || $ysodata eq "ERROR") {
         $fixer->error("Field ".$f->tag()."\$a:\"".$new_a."\" finto fetch failed");
-    } elsif (($sf_0 eq "") && ($sf_0 ne $ysodata->{'uri'})) {
-        $f->update('0' => $ysodata->{'uri'});
-        $fixer->msg("Field ".$f->tag()."\$0:\"".$sf_0."\"=>\"".$ysodata->{'uri'}."\"");
+    } else {
+        if (($sf_0 eq "") && ($sf_0 ne $ysodata->{'uri'})) {
+            $f->update('0' => $ysodata->{'uri'});
+            $fixer->msg("Field ".$f->tag()."\$0:\"".$sf_0."\"=>\"".$ysodata->{'uri'}."\"");
 
-        my $lang = "";
+            my $lang = "";
 
-        $lang = "yso/fin" if ($ysodata->{'lang'} eq 'fi');
-        $lang = "yso/swe" if ($ysodata->{'lang'} eq 'sv');
+            $lang = "yso/fin" if ($ysodata->{'lang'} eq 'fi');
+            $lang = "yso/swe" if ($ysodata->{'lang'} eq 'sv');
 
-        $f->update('2' => $lang) if (($lang ne "") && ($sf_2 ne $lang));
+            $f->update('2' => $lang) if (($lang ne "") && ($sf_2 ne $lang));
+
+            $new_a = $ysodata->{'prefLabel'} if ($new_a ne $ysodata->{'prefLabel'});
+        }
+
+    }
+
+    if ($sf_a ne $new_a) {
+        $f->update('a' => $new_a);
+        $fixer->msg("Field ".$f->tag()."\$a:\"".$sf_a."\"=>\"".$new_a."\"");
     }
 
     my $ind2 = $f->indicator(2) . "";
