@@ -21,7 +21,7 @@ use Data::Dumper;
 my %yso_aika;
 
 sub fetch_ysoaika {
-    my ($fixer, $term) = @_;
+    my ($fixer, $term, $searchtype) = @_;
 
     #$fixer->msg("fetch_ysoaika(".$term.")");
     
@@ -44,7 +44,7 @@ sub fetch_ysoaika {
         #$fixer->msg("fetch urli:\"".$urli."\"");
         my $data = decode_json($response->{content});
 
-        if (!defined($data->{'results'}[0]) && ($term !~ /\*/)) {
+        if (!defined($data->{'results'}[0]) && ($term !~ /\*/) && ($searchtype == 1)) {
             return fetch_ysoaika($fixer, $term . "*");
         } else {
             $yso_aika{$term} = $data->{'results'}[0] || "ERROR";
@@ -62,6 +62,8 @@ sub fix_ysoaika_singlefield {
     my $sf_2 = $f->subfield('2') || "";
     my $sf_0 = $f->subfield('0') || "";
 
+    my $ysodata;
+
     if ($sf_a eq "") {
         $fixer->msg("Field ".$f->tag()."\$a is null.");
         return;
@@ -74,14 +76,51 @@ sub fix_ysoaika_singlefield {
     }
     $new_a =~ s/\N{EN DASH}/-/g;
 
-    if ($new_a =~ /^([0-9]{3}0)-([0-9]{3}9)$/) {
+    $new_a =~ s/ j\.a\.a$/ jaa/g if ($new_a =~ / j\.a\.a$/);
+    $new_a =~ s/ e\.a\.a$/ eaa/g if ($new_a =~ / e\.a\.a$/);
+
+    if ($new_a =~ /^([0-9]{3}0)-([0-9]{3}9)(-luku)?$/) {
         my $year1 = int($1);
         my $year2 = int($2);
 
         $new_a = $year1."-luku (vuosikymmen)" if ($year1 + 9 == $year2);
+        $ysodata = fetch_ysoaika($fixer, $new_a, 1);
+    } elsif ($new_a =~ /[0-9]([0-9])0-(luku|talet)$/) {
+        my $kymmen = $1 || "0";
+        my $talet = $2 || "";
+        $ysodata = fetch_ysoaika($fixer, $new_a, 0);
+        if (!defined($ysodata) || $ysodata eq "ERROR") {
+            my $xa;
+            if ($kymmen eq "0") {
+                $xa = $new_a." (vuosisata)" if ($talet eq "luku");
+                $xa = $new_a." (århundrade)" if ($talet eq "talet");
+            } else {
+                $xa = $new_a." (vuosikymmen)" if ($talet eq "luku");
+                $xa = $new_a." (årtionde)" if ($talet eq "talet");
+            }
+            $ysodata = fetch_ysoaika($fixer, $xa, 0);
+            if (!defined($ysodata) || $ysodata eq "ERROR") {
+                $ysodata = fetch_ysoaika($fixer, $xa, 1);
+            }
+            if (!defined($ysodata) || $ysodata eq "ERROR") {
+                # nothing
+            } else {
+                $new_a = $xa;
+            }
+        }
+        if (!defined($ysodata) || $ysodata eq "ERROR") {
+            $ysodata = fetch_ysoaika($fixer, $new_a, 1);
+        }
+    } elsif ($new_a =~ /^[0-9][0-9][1-9][0-9]$/) {
+        # if exaclty eg. "2010", don't search for "2010*"
+        $ysodata = fetch_ysoaika($fixer, $new_a, 0);
+        if (!defined($ysodata) || $ysodata eq "ERROR") {
+            $ysodata = fetch_ysoaika($fixer, $new_a, 1);
+        }
+    } else {
+        $ysodata = fetch_ysoaika($fixer, $new_a, 1);
     }
 
-    my $ysodata = fetch_ysoaika($fixer, $new_a);
 
     if (!defined($ysodata) || $ysodata eq "ERROR") {
         $fixer->error("Field ".$f->tag()."\$a:\"".$new_a."\" finto fetch failed");
