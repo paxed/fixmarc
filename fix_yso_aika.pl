@@ -61,6 +61,7 @@ sub fix_ysoaika_singlefield {
     my $sf_a = $f->subfield('a') || "";
     my $sf_2 = $f->subfield('2') || "";
     my $sf_0 = $f->subfield('0') || "";
+    my $sf_9 = trim($f->subfield('9') || "");
 
     my $ysodata;
 
@@ -68,6 +69,9 @@ sub fix_ysoaika_singlefield {
         $fixer->msg("Field ".$f->tag()."\$a is null.");
         return;
     }
+
+    # delete internal Koha authority link, we put the Finto link in subfield 0
+    $f->delete_subfield('9') if ($sf_9 =~ /^[0-9]+$/);
 
     my $new_a = trim($sf_a);
 
