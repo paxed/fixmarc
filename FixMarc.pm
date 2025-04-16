@@ -158,6 +158,7 @@ sub new {
         zebra => $args->{'zebra'} || 0,
         verbose => $args->{'verbose'} || 0,
 	debug => $args->{'debug'} || 0,
+        diff_context => $args->{'diff_context'} || 0,
         dryrun => $args->{'dryrun'} || 0
     }, $class;
 
@@ -173,7 +174,8 @@ sub new {
         'zebra' => \$self->{'zebra'},
         'v|verbose' => \$self->{'verbose'},
 	'dry-run|dryrun' => \$self->{'dryrun'},
-	'debug' => \$self->{'debug'},
+        'debug' => \$self->{'debug'},
+        'diff-context|diff_context=i' => \$self->{'diff_context'},
         'help|h|?' => \$help,
         'man' => \$man,
         'configfile=s' => sub { my $fn = $_[1]; if (-f $fn && -r $fn) { %dbdata = %{_read_db_settings($fn, \%dbdata)}; $self->{'dbdata'} = \%dbdata; }; $used_configfile = 1; },
@@ -250,7 +252,7 @@ sub maybe_fix_marc {
         my $recxml = $record->as_xml_record();
         if ($origrecord->as_xml_record() ne $recxml) {
 	    if ($self->{'debug'} && !$warning_stop) {
-		$self->msg(diff(\$origrecord->as_xml_record(), \$recxml, { CONTEXT => 0 }));
+		$self->msg(diff(\$origrecord->as_xml_record(), \$recxml, { CONTEXT => $self->{'diff_context'} }));
 	    }
 	    if (!$self->{'dryrun'} && !$warning_stop) {
 		my $sql = $self->{'updatesql'};
