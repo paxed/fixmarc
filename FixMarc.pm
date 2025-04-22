@@ -159,8 +159,11 @@ sub new {
         verbose => $args->{'verbose'} || 0,
 	debug => $args->{'debug'} || 0,
         diff_context => $args->{'diff_context'} || 0,
+        uniqlog => $args->{'uniqlog'} || 0,
         dryrun => $args->{'dryrun'} || 0
     }, $class;
+
+    $self->{'uniq_logs'} = undef;
 
     $self->addfunc($args->{'func'}) if (defined($args->{'func'}));
 
@@ -176,6 +179,7 @@ sub new {
 	'dry-run|dryrun' => \$self->{'dryrun'},
         'debug' => \$self->{'debug'},
         'diff-context|diff_context=i' => \$self->{'diff_context'},
+        'uniqlog' => \$self->{'uniqlog'},
         'help|h|?' => \$help,
         'man' => \$man,
         'configfile=s' => sub { my $fn = $_[1]; if (-f $fn && -r $fn) { %dbdata = %{_read_db_settings($fn, \%dbdata)}; $self->{'dbdata'} = \%dbdata; }; $used_configfile = 1; },
@@ -195,6 +199,7 @@ sub new {
         $self->{'dbdata'} = \%dbdata;
     }
 
+    $self->{'debug'} = 1 if ($self->{'uniqlog'});
 
     $self->{'sql'} = _constructSelectSQL(undef, $self->{'where'}, $self->{'limit'}) if ($self->{'where'} || $self->{'limit'});
 
@@ -221,6 +226,49 @@ sub msg {
     my ($self, $msg) = @_;
 
     print STDOUT "$msg".(defined($self->{'id'}) ? " [id:".$self->{'id'}."]" : "")."\n";
+}
+
+sub gather_uniq_changes {
+    my ($self, $data) = @_;
+
+    my $indata = 0;
+    my $currdata = "";
+    my $haschange = 0;
+
+    foreach my $line (split(/[\r\n]/, $data)) {
+        $line =~ s/[\r\n]+$//;
+
+        $indata = 1 if ($line =~ m/^\s*(<leader>|<controlfield|<datafield)/);
+
+        if ($indata) {
+            $currdata .= "\n" if ($currdata ne "");
+            $currdata .= $line;
+            $haschange = 1 if ($line =~ m/^[-+]/);
+        }
+
+        $indata = 0 if ($line =~ m/(<\/leader>|<\/controlfield>|<\/datafield>)\s*$/);
+
+        if (!$indata && ($currdata ne "")) {
+            if ($haschange) {
+                $self->{'uniq_logs'}{$currdata} = 0 if (!defined($self->{'uniq_logs'}{$currdata}));
+                $self->{'uniq_logs'}{$currdata}++;
+            }
+            $currdata = "";
+            $haschange = 0;
+        }
+    }
+}
+
+sub print_uniq_changes {
+    my ($self) = @_;
+
+    return if (!$self->{'uniqlog'} || !defined($self->{'uniq_logs'}));
+
+    my @keys = sort { $self->{'uniq_logs'}{$b} <=> $self->{'uniq_logs'}{$a} } keys(%{$self->{'uniq_logs'}});
+
+    foreach my $k (@keys) {
+        $self->msg("------------ COUNT:".$self->{'uniq_logs'}{$k}."\n".$k."");
+    }
 }
 
 sub maybe_fix_marc {
@@ -252,7 +300,12 @@ sub maybe_fix_marc {
         my $recxml = $record->as_xml_record();
         if ($origrecord->as_xml_record() ne $recxml) {
 	    if ($self->{'debug'} && !$warning_stop) {
-		$self->msg(diff(\$origrecord->as_xml_record(), \$recxml, { CONTEXT => $self->{'diff_context'} }));
+                if ($self->{'uniqlog'}) {
+                    my $diffi = diff(\$origrecord->as_xml_record(), \$recxml, { CONTEXT => 100 });
+                    $self->gather_uniq_changes($diffi);
+                } else {
+                    $self->msg(diff(\$origrecord->as_xml_record(), \$recxml, { CONTEXT => $self->{'diff_context'} }));
+                }
 	    }
 	    if (!$self->{'dryrun'} && !$warning_stop) {
 		my $sql = $self->{'updatesql'};
@@ -302,6 +355,9 @@ sub run {
 
     _db_disconnect($dbh);
     undef $self->{'dbh'};
+
+    undef $self->{'id'};
+    $self->print_uniq_changes();
 }
 
 1;
