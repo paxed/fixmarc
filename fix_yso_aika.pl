@@ -35,7 +35,10 @@ sub fetch_ysoaika {
             $fixer->error("could not uri_escape \"$term\"");
             return undef;
         }
+        # url encoding: %E5 == 'å' ISO-8839-15, %C3%A5 == 'å' in UTF-8
         $t =~ s/%E5/%C3%A5/g; # å
+        $t =~ s/%F6/%C3%B6/g; # ö
+        $t =~ s/%E4/%C3%A4/g; # ä
         #$t =~ s/%2A/*/g;
 
         my $urli = 'https://api.finto.fi/rest/v1/search?vocab=yso-aika&query='.$t.'&fields=topConceptOf';
@@ -80,8 +83,11 @@ sub fix_ysoaika_singlefield {
     }
     $new_a =~ s/\N{EN DASH}/-/g;
 
-    $new_a =~ s/ j\.a\.a$/ jaa/g if ($new_a =~ / j\.a\.a$/);
-    $new_a =~ s/ e\.a\.a$/ eaa/g if ($new_a =~ / e\.a\.a$/);
+    $new_a =~ s/ j\.a\.a$/ jaa/g if ($new_a =~ / j\.a\.a$/i);
+    $new_a =~ s/ e\.a\.a$/ eaa/g if ($new_a =~ / e\.a\.a$/i);
+
+    $new_a =~ s/$/./g if ($new_a =~ / [fe]\.Kr$/i);
+    $new_a =~ s/$/./g if ($new_a =~ / [ej]aa$/i);
 
     if ($new_a =~ /^([0-9]{3}0)-([0-9]{3}9)(-luku)?$/) {
         my $year1 = int($1);
