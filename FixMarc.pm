@@ -51,8 +51,12 @@ sub _constructSelectSQL {
         $sql = "select biblionumber, metadata, timestamp from biblio_metadata";
         $sql .= " where ".$where if (defined($where));
         $sql .= " order by biblionumber";
-        $sql .= " limit ".$limit if (defined($limit) && $limit > 0);
     }
+
+    if ($sql !~ / limit /i && defined($limit) && ($limit > 0)) {
+        $sql .= " limit ".$limit;
+    }
+
     return $sql;
 }
 
@@ -201,7 +205,7 @@ sub new {
 
     $self->{'debug'} = 1 if ($self->{'uniqlog'});
 
-    $self->{'sql'} = _constructSelectSQL(undef, $self->{'where'}, $self->{'limit'}) if ($self->{'where'} || $self->{'limit'});
+    $self->{'sql'} = _constructSelectSQL($args->{'sql'}, $self->{'where'}, $self->{'limit'}) if ($self->{'where'} || $self->{'limit'});
 
     $self->msg("INFO: Using db: " . $self->{'dbdata'}{'dbname'});
     $self->msg("INFO: PARAMS: " . join(" ", @ARGV));
