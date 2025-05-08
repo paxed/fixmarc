@@ -65,6 +65,7 @@ sub fix_ysoaika_singlefield {
     my $sf_2 = $f->subfield('2') || "";
     my $sf_0 = $f->subfield('0') || "";
     my $sf_9 = trim($f->subfield('9') || "");
+    my $ind2 = $f->indicator(2) || "";
 
     my $ysodata;
 
@@ -86,6 +87,7 @@ sub fix_ysoaika_singlefield {
     $new_a =~ s/ j\.a\.a$/ jaa/g if ($new_a =~ / j\.a\.a$/i);
     $new_a =~ s/ e\.a\.a$/ eaa/g if ($new_a =~ / e\.a\.a$/i);
 
+    $new_a =~ s/$/./g if ($new_a =~ / [ej]Kr$/i);
     $new_a =~ s/$/./g if ($new_a =~ / [fe]\.Kr$/i);
     $new_a =~ s/$/./g if ($new_a =~ / [ej]aa$/i);
 
@@ -121,8 +123,10 @@ sub fix_ysoaika_singlefield {
         if (!defined($ysodata) || $ysodata eq "ERROR") {
             $ysodata = fetch_ysoaika($fixer, $new_a, 1);
         }
+    } elsif ($new_a =~ /^[1-9][0-9][0-9][0-9]$/ && $ind2 =~ /^[47]$/ && $sf_2 eq 'yso/fin' && $f->tag() eq '648') {
+        # no change, this is specific year
     } elsif ($new_a =~ /^[0-9][0-9][1-9][0-9]$/) {
-        # if exaclty eg. "2010", don't search for "2010*"
+        # if exactly eg. "2010", don't search for "2010*"
         $ysodata = fetch_ysoaika($fixer, $new_a, 0);
         if (!defined($ysodata) || $ysodata eq "ERROR") {
             $ysodata = fetch_ysoaika($fixer, $new_a, 1);
@@ -156,9 +160,7 @@ sub fix_ysoaika_singlefield {
         $fixer->msg("Field ".$f->tag()."\$a:\"".$sf_a."\"=>\"".$new_a."\"");
     }
 
-    my $ind2 = $f->indicator(2) . "";
-
-    if (($f->tag() eq '648') && ($ysodata eq "ERROR") &&
+    if (($f->tag() eq '648') && (!defined($ysodata) || $ysodata eq "ERROR") &&
         ($new_a =~ /^[0-9]{4}(-[0-9]{4})?$/) && ($ind2 eq '7')) {
         $f->set_indicator(2, '4');
         $f->delete_subfield(code => '2');
