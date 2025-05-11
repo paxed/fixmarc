@@ -140,9 +140,6 @@ sub fix_ysoaika_singlefield {
         $fixer->error("Field ".$f->tag()."\$a:\"".$new_a."\" finto fetch failed");
     } else {
         if (($sf_0 eq "") && ($sf_0 ne $ysodata->{'uri'})) {
-            $f->update('0' => $ysodata->{'uri'});
-            $fixer->msg("Field ".$f->tag()."\$0:\"".$sf_0."\"=>\"".$ysodata->{'uri'}."\"");
-
             my $lang = "";
 
             $lang = "yso/fin" if ($ysodata->{'lang'} eq 'fi');
@@ -151,6 +148,9 @@ sub fix_ysoaika_singlefield {
             $f->update('2' => $lang) if (($lang ne "") && ($sf_2 ne $lang));
 
             $new_a = $ysodata->{'prefLabel'} if ($new_a ne $ysodata->{'prefLabel'});
+
+            $f->update('0' => $ysodata->{'uri'});
+            $fixer->msg("Field ".$f->tag()."\$0:\"".$sf_0."\"=>\"".$ysodata->{'uri'}."\"");
         }
 
     }
