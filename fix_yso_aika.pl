@@ -95,15 +95,15 @@ sub fix_ysoaika_singlefield {
     $new_a =~ s/ +-/-/g;
     $new_a =~ s/- +/-/g;
 
-    if ($new_a =~ /^([0-9]{3}0)-([0-9]{3}9)(-luku)?$/) {
+    if ($new_a =~ /^([0-9]{3}0)-([0-9]{3}9)(-luku)?$/i) {
         my $year1 = int($1);
         my $year2 = int($2);
 
         $new_a = $year1."-luku (vuosikymmen)" if ($year1 + 9 == $year2);
         $ysodata = fetch_ysoaika($fixer, $new_a, 1);
-    } elsif ($new_a =~ /[0-9]([0-9])0-(luku|talet)$/) {
+    } elsif ($new_a =~ /[0-9]([0-9])0-(luku|talet)$/i) {
         my $kymmen = $1 || "0";
-        my $talet = $2 || "";
+        my $talet = lc($2 || "");
         $ysodata = fetch_ysoaika($fixer, $new_a, 0);
         if (!defined($ysodata) || $ysodata eq "ERROR") {
             my $xa;
