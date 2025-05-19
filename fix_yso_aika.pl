@@ -91,6 +91,7 @@ sub fix_ysoaika_singlefield {
     $new_a =~ s/$/./g if ($new_a =~ / [fe]\.Kr$/i);
     $new_a =~ s/$/./g if ($new_a =~ / [ej]aa$/i);
 
+    $new_a =~ s/--*/-/g;
     $new_a =~ s/ +-/-/g;
     $new_a =~ s/- +/-/g;
 
